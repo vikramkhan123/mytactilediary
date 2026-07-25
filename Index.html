@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tactile Travel Diary</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="header">
+    <h1>✨ Travel & Memory Log</h1>
+  </div>
+
+  <!-- Create Memory Card -->
+  <div class="card">
+    <textarea id="noteInput" placeholder="Write today's story, thoughts, or adventure..."></textarea>
+    
+    <div class="input-row">
+      <input type="text" id="locationInput" placeholder="📍 Location (e.g. Jaipur, Peak)">
+      <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImage(this)">
+      <button onclick="document.getElementById('imageInput').click()" style="padding: 8px; border-radius: 10px; border: 1px solid #ccc; background: #fff;">📸 Photo</button>
+    </div>
+
+    <div id="imagePreviewContainer" style="margin-top: 8px;"></div>
+
+    <button class="btn" onclick="saveMemory()">Save Entry 📌</button>
+  </div>
+
+  <!-- Memories Feed -->
+  <div style="width: 100%; max-width: 400px;" id="feedContainer"></div>
+
+  <script>
+    let selectedImageBase64 = "";
+
+    document.addEventListener("DOMContentLoaded", renderFeed);
+
+    function handleImage(input) {
+      const file = input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          selectedImageBase64 = e.target.result;
+          document.getElementById('imagePreviewContainer').innerHTML = 
+            `<img src="${selectedImageBase64}" style="width:100%; border-radius:10px; max-height:150px; object-fit:cover;">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function saveMemory() {
+      const text = document.getElementById("noteInput").value;
+      const location = document.getElementById("locationInput").value;
+
+      if (!text.trim() && !selectedImageBase64) return;
+
+      const memory = {
+        id: Date.now(),
+        text: text,
+        location: location || "Unknown Location",
+        image: selectedImageBase64,
+        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      };
+
+      let feed = JSON.parse(localStorage.getItem("offline_memories") || "[]");
+      feed.unshift(memory);
+      localStorage.setItem("offline_memories", JSON.stringify(feed));
+
+      // Clear Form
+      document.getElementById("noteInput").value = "";
+      document.getElementById("locationInput").value = "";
+      selectedImageBase64 = "";
+      document.getElementById('imagePreviewContainer').innerHTML = "";
+
+      renderFeed();
+    }
+
+    function renderFeed() {
+      const container = document.getElementById("feedContainer");
+      container.innerHTML = "";
+      let feed = JSON.parse(localStorage.getItem("offline_memories") || "[]");
+
+      feed.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML = `
+          <div class="entry-date">${item.date}</div>
+          <div class="entry-meta">📍 ${item.location}</div>
+          <p style="margin: 8px 0; font-size: 14px; line-height: 1.4;">${item.text}</p>
+          ${item.image ? `<img src="${item.image}">` : ''}
+        `;
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
